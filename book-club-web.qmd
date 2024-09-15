@@ -1,0 +1,443 @@
+---
+title: "DNA Methylation mediation of Adverse Outcomes in Type 2 Diabetes"
+format:
+  html:
+    theme: cosmo
+    page-layout: full
+    code-fold: true
+    html-math-method: mathjax
+    embed-resources: false
+    reference-location: margin
+    fontsize: 1em
+    fig-responsive: false
+#   docx:
+#     theme: default
+#   gfm:
+#     preview-mode: raw
+#     html-math-method: mathml
+toc: true
+toc-location: left
+toc-depth: 4
+number-sections: true
+mermaid:
+    theme: neutral
+mermaid-format: js
+filters:
+  - diagram
+diagram:
+  cache: false
+  engine:
+    mermaid: false
+    tikz:
+      execpath: lualatex
+      header-includes:
+        - '\usepackage{amsmath,amssymb}'
+        - '\usetikzlibrary{matrix}'
+        - '\usetikzlibrary{positioning}'
+        - '\usetikzlibrary{shapes}'
+        - '\usetikzlibrary{arrows.meta}'
+        - '\usetikzlibrary{decorations.pathreplacing,quotes,calligraphy,calc}'
+---
+
+## Million Veteran Program
+
+- Current data release:
+
+  - 539,020 Individuals
+
+    - 45,460 individuals with methylation data
+
+        - 28,709 (~64\%) with whole genome sequencing
+
+  - Amongst patients with methylation data, ~40\% are T2D.
+
+::: {.column-margin}
+![](mvp-counts-venn-diagram.svg){width=100%}
+:::
+
+### Methylation Data
+
+- 768,569 CpG site probes
+
+- CpG site methylation is expressed in terms of *beta values*, i.e.,
+
+$$
+\beta = \frac{\text{methylated signal}}{\text{methylated signal} + \text{unmethylated signal}}.
+$$
+
+- For each sample, the estimated percentage of each blood cell type (B-cell, CD4 T, CD8 T, Eos, Mono, Neu, NK) is available in the `Houseman` dataset.
+
+## Study Objectives
+
+- Identify differentially methylated CpG sites associated with glycemia exposures
+
+- Identify differentially methylated CpG sites associated with diabetic complications
+
+  - retinopathy
+
+  - nephropathy
+
+- Determine whether the identified CpG sites are responsible for the association between glycemia exposures and DM complications
+
+## Cohort Identification
+::: {#fig-study-design}
+```{.tikz}
+%%| width: 100%
+\begin{tikzpicture}[
+    event/.style={circle, fill=black, minimum size=0.5em, inner sep=0, outer sep=0},
+    description/.style={text width=3cm, align=center},
+    legend entry/.style={font=\small, align=left},
+    overbrace/.style args = {#1/#2}{
+        decorate,
+        decoration={calligraphic brace, amplitude=0.5em,
+                    pre =moveto, pre  length=1pt,
+                    post=moveto, post length=1pt,
+                    raise=#1,
+                    #2, % for mirroring of brace
+                    },
+            very thick},
+]
+% Timeline
+\draw[Stealth-Stealth, thick] (-6,0) -- (6,0);
+% draw dashed line at t=0
+\draw [dashed] (0,0) -- (0,1.875);
+% over plot white box so number does not overlap line
+\draw[draw=white,fill=white] (-0.5em,-1.7em) rectangle (0.5em,-0.6em);
+% draw vertical lines
+\foreach \i in {-5,...,5}
+\draw (\i,-0.1) -- (\i,0.1) node (n\i) [below=0.75em,align=center] {$\i$};
+% draw exposure region
+\draw[overbrace=5.5em/] (-5,0) -- node[above=2] {Pre-period (Exposure)} (-0.125,0);
+\draw[-Stealth, thick] (0.125,2) to ["Post-period"] (6,2);
+% Events
+\node[event] (event1) at (-3.6,0) {};
+\node[event, fill=none, draw=none] (event2) at (-2,0) {\Large $\times$};
+\draw[-Stealth] (-2, -1.5) -- (-2, -0.75);
+% \node[description] (desc2) [below=1.25 of event2] {Initial\\DM\\Diagnosis};
+\node[event] (event3) at (0,0) {};
+\draw[-Stealth] (0, -1.5) -- (0, -0.75);
+\node[text width=3cm, align=center] at (0, -2.175) {DNA/DNAme\\Sample\\Collection};
+\node[event] (event4) at (0.5,0) {};
+\node[event] (event5) at (2.2,0) {};
+\node[event, fill=red] (event6) at (4,0) {};
+\draw[-Stealth] (4, -1.5) -- (4, -0.75);
+% \node[description] (desc6) [below=1.375 of event6] {Diagnosis with\\DM\\Complication};
+\node[event] (event7) at (4.8,0) {};
+% Add legend
+\matrix (legend) [draw, matrix of nodes,
+                  nodes={legend entry},
+                  row sep=0.1em,
+                  column sep=1em,
+                  anchor=south east]
+at ([xshift=8em,yshift=-4em]current bounding box.south east) {
+    \node[event,] {$\cdot$}; & Primary Care or HbA1c measurement\\
+    \node[event, fill=none] {\Large $\times$}; & Initial DM Diagnosis\\
+    \node[event, fill=red] {$\cdot$}; & Diagnosis with DM complication\\
+};
+\end{tikzpicture}
+```
+Sample Subject Timeline with Landmark Events
+:::
+
+- Subjects must have $\ge 1$ DM diagnosis code or equivalent prior to DNA sample collections
+
+- Subjects diagnosed with DM ***after*** DNA sample collection will be excluded
+
+- Subjects diagnosed with a DM related complication ***before*** DNA sample collection will be excluded as well
+
+::: {#fig-cohort-selection}
+```{mermaid}
+flowchart TD
+    A[All MVP subjects with\nmethylation data\nN = 45,460] --> B1[Subjects without a \ndiabetes diagnosis\nor equivalent\n_____]
+    A ---> B2["Subjects with ≥1\ndiabetes diagnosis or equivalent\nprior to DNA sample collection"]
+    B2 --> C1[Subjects with diabetes\nrelated complications before \nDNA sample collection\n____]
+    B2 ---> C2[Diagnosed DM Subjects without diabetes\nrelated complications prior to\nDNA sample collection]
+```
+
+Cohort Selection Flowchart
+:::
+
+## Outcome Definition
+
+### Incidence Outcomes
+
+- Use available patient level EHR data to identify diabetic subjects
+
+  - Diagnosis codes alone may fail to capture subjects diagnosed outside of the VA
+
+- Diabetic Retinopathy will be identified by
+
+  - PheCode definition or the [case algorithm](./breeyear_suppl_table1.html) defined in [@breeyear2023retinopathyalgo]. Reproducing the 'V2' algorithm specific to MVP:
+
+    - (Any combination of 2 or more unique days of ICD9 or ICD10 codes for DR of any severity (nsdr_icd, mnpdr_icd, snpdr_icd, pdr_icd) 
+        - **OR** health factor codes [any_dr_hf, nsdr_hf, mnpdr_hf, snpdr_hf, pdr_hf]) 
+        - **OR** ((ophthalmic exam CPT codes specific to fundus photography [opt_exam] 
+        - **OR** evidence of teleretinal visit through health factors [tri_evidence] 
+        - **OR** general CPT cdoe with a 408 stop code to confirm visit to eye clinic [opt_code_use_with_stop_code]) 
+            - **AND** (1 or more ICD9 or ICD10 codes for DR of any severity OR health factor codes for DR within 24 hours of the ophthalmic exam
+
+- Chronic Kidney Disease (CKD) or nephropathy will be identified by
+
+  - Leveraging the phenotyping construction developed in [@kim2023phenotyping]
+
+- Additional diabetes related variables to be constructed using definitions provided in [@yang2024T1D]
+
+### Time-to-Event Outcomes
+
+- Will be defined by taking the earliest date of diagnosis with a specific diabetic complication (Retinopathy/Nephropathy)
+
+    - Need to consider possible competing risks including death
+
+        - Review of available software for time-to-event EWAS with competing risks
+
+## Exposure Definition {#sec-exposure}
+
+- Want to construct a measure that quantifies the total exposure to high glycemia in the five[^1] years immediately prior to DNA sample collection. 
+
+[^1]: It may be appropriate to have a longer window, or even lookback through the full subject history. Model choice will depend on the distribution of available data pre-DNA sample collection
+
+::: {#fig-exposure-model}
+
+![](mvp-plot-exposure.svg){width=100%}
+
+Sample HbA1C trajectory in pre-period, where sample collection occurs nine years following initial DM diagnosis
+:::
+
+  (1) Mean HbA1c level in the **five years** prior to DNA methylation sample collection
+
+  (2) Maximum HbA1c level in the **five years** prior to DNA methylation sample collection
+
+  (3) Cumulative HbA1c level in the **five years** prior to DNA methylation sample collection
+
+  (4) CV of HbA1c level in the **five years** prior to DNA methylation sample collection
+
+::: {#fig-exposure2-model}
+
+![](mvp-diff-exposures.svg){width=100%}
+
+Alternative Outcomes based on different definitions for Exposure
+:::
+
+## Analysis Plan
+
+::: {#fig-analysis-flowchart}
+```{mermaid}
+flowchart LR
+  cohort(Cohort Identification) --> ewas(EWAS)
+  outcome(Outcome Definition) --> ewas
+  exposure(Exposure Definition) --> ewas
+  subgraph Mediation Analysis
+  retina(Retinopathy)
+  ckd(Chronic Kidney Disease)
+  end
+  ewas(EWAS) ---> retina & ckd
+  ewas(EWAS) --> meQTL(meQTL Identification) --> MR-retina & MR-ckd
+  subgraph Mendelian Randomization
+  MR-retina(Retinopathy)
+  MR-ckd(Chronic Kidney Disease)
+  end
+  ewas ---> validation(External Data Validation)
+```
+:::
+
+## EWAS: Analysis to determine which CpG sites methylation are associated with HbA1c level {#sec-ewas}
+
+- Hypothesis: HbA1c has a *cumulative* effect on DNA methylation levels, i.e., the current DNA methylation depends more on one's historical HbA1C levels rather than current HbA1c level.
+
+  - To analyze this we will perform an EWAS across all CpG sites under the different models for prior exposure [@sec-exposure]
+
+- EWAS **covariates for adjustment** (base model): sex, age, cell composition, potential batch effects, **duration of diabetes** prior to sample collection (considered below). Therefore we will consider:
+
+  (1) Model 1:
+
+  $$
+  \beta \sim \mbox{Mean HbA1c + sex + age + cell composition + batch effects}
+  $$
+
+  (2) Model 2:
+
+  $$
+  \beta \sim \mbox{Maximum HbA1c + sex + age + cell composition + batch effects}
+  $$
+
+  (3) Model 3:
+
+  $$
+  \beta \sim \mbox{Cumulative HbA1c level + sex + age + cell composition + batch effects}
+  $$
+
+  (4) Model 4:
+
+  $$
+  \beta \sim \mbox{CV of HbA1c level + sex + age + cell composition + batch effects}
+  $$
+
+- Adjustment of **Diabetes duration**: interval between the date of the first DM diagnosis code to MVP recruitment date, potentially can include it as an interval censored covariates. Alternatively, we will have to extract a newly diagnosed DM cohort (much smaller sample size)
+
+- Included in batch effects are some technical details specific to MVP:
+
+  + Scanner: identifier of scanner used to scan the assay for hybridization
+
+  + Duration of Sample Storage: the time frame (in days) between blood draw and hybridization to Epic
+methylation assay
+
+  + Per sample batch effects may be complicated or difficult to adjust for given that subjects enroll continuously and MVP being a multi-site program with a complex population. Possible strategies:
+
+    * Include `technicalMetric_PC[1-27]` as covariates
+
+      * these are the first 27 technical principal components calculated using background and control signals across probes to examine sample clustering
+
+    * Model batch effect as a random effect (`meffil` supports this for EWAS)
+
+- Threshold for p-value significance will be set at $5\%$ after Bonferroni correction.
+
+- The R package [`meffil`](https://github.com/perishky/meffil) will be used for EWAS on MVP data, and has already been used to fit an EWAS for body mass index.
+
+- The R package [`bacon`](https://www.bioconductor.org/packages/release/bioc/html/bacon.html) was used to reduce inflation and bias for the aforementioned analysis.
+
+### Sensitivity Analysis
+
+- We will evaluate the following additional clinical variables (see [@tbl-sens-variables]) as potential confounders in the EWAS analysis. We will add 1 variable at a time to the base model and evaluate the change in p-value of *historical* HbA1c exposures with and without each of above variables
+
+| Category                    | Variable                 |
+|:----------------------------|:-------------------------|
+| Demographics                | race                     |
+|                             | smoking status           |
+|                             | body mass index          |
+| Cardiac and blood lipids    | systolic blood pressure  |
+|                             | diastolic blood pressure |
+|                             | (total?) cholesterol     |
+|                             | triglyceride             |
+|                             | low-density lipoprotein  |
+|                             | high-density lipoprotein |
+| Diabetic Complications      | PDR                      |
+|                             | SNPDR                    |
+|                             | CSME                     |
+|                             | AER $>30$ mg / 24h       |
+|                             | Cardiovascular Disease   |
+
+: Additional clinical covariates to be considered. {#tbl-sens-variables}
+
+### Validation
+
+We will validate the results using external data,
+
+- UCLA ATLAS
+- MESA data
+- ?
+
+### Annotation
+
+- HbA1c associated regions will be defined as those having at least two HbA1c associated CpG sites in a 500 base pair window.
+
+- Additionally, each significant HbA1c associated CpG will be annotated based on its genomic location relative to RefSeq genes.
+
+## meQTL Identification {#sec-meQTL}
+
+- Using genomic data, a GWAS at a Bonferroni corrected significance level $\alpha=5\%$ will be conducted for each Hb1A1c-associated CpG site identified in @sec-ewas, adjusting for age, sex, cell composition, and batch effects.
+
+- For each CpG site, SNPs significantly associated with CpG site methylation will be identified as meQTLs.
+
+## Mediation Analysis
+
+### Step 1:
+
+- Time-to-event analysis (Cox Proportional Hazards or AFT):
+
+  + Outcome: time from MVP start to the development of (1) retinopathy/(2) nephropathy or to the last observed date (right-censored).
+
+    * ? For Retinopathy, do we need to consider different types? PDR, SNPDR, and CSME will be considered to be separate outcomes
+
+  + Time-fixed covariates
+    * Historical HbA1c measure prior to MVP
+    * Age at MVP enrollment
+    * Sex
+    * Prior diabetes duration at MVP enrollment
+    * blood sample cell composition
+
+  + log-transformed HbA1c level will be included as a time-varying covariate from MVP start to the event (or censoring) date
+
+  + Adjustment for batch effects is required
+
+- Longitudinal eGFR analysis will be done using a linear mixed effects model with random intercepts and slopes for each individual.
+
+- Other clinical variables will be considered similar to those in EWAS analysis.
+
+### Step 2:
+
+- For each outcome in step 1, we will instead analyze the association between DNA methylation at HbA1c associated CpG sites identified in @sec-ewas.
+
+  + This amounts to substituting historical HbA1c level with CpG site methylation (in terms of normalized $M$ value) as a covariate, this will be repeated for each HbA1c associated CpG site.
+
+### Step 3:
+
+- For each HbA1c associated CpG site, we will fit the same model as in step 1, this time including *both* historical HbA1c level and DNA methylation level as covariates.
+
+- Following Chen, we will quantify the mediation effect by:
+
+>The percentage of statistic score change ($z$-score in Cox proportional-hazards models and $t$-score in linear regression) on historical HbA1c from step 3 versus step 1 was then calculated to obtain the percentage of DNA methylation that explains the association between HbA1c and complications (defined from step 1)
+
+$$
+  \mbox{Percent Change} = \frac{\mbox{test statistic for HbA1c in Step 1} - \mbox{test statistic for HbA1c in Step 3}}{\mbox{test statistic for HbA1c in Step 1}} \times 100\%
+$$
+
+### Step 4
+
+- For each outcome, Chen selected the top 10 HbA1c-associated CpG sites and performed a brute force best subset selection, picking the CpG sites that best explained the risk of the specific diabetes complication. Then, the percentage change was constructed similarly as in Step 3.
+
+## Mendelian Randomization (MR)
+
+MR can be performed for each outcome, analyzing the causal effect of DNA methylation levels on diabetic complications [@chen2020dna]. In MVP, since there are $~650,000 - 45,460 = ~605,000$ individuals with genotyping data and without methylation data, this cohort can be used to perform *Subsample Instrumental Variable Estimation* [@pierce2013efficient]
+
+- For each outcome, the procedure is as follows:
+
+  (1) Using the smaller cohort with methylation data, regress the *exposure* $X$ (in-this case CpG site Methylation at all CpG sites associated with the outcome) on the genetic information $G$, this is already available from @sec-meQTL
+
+  (2) Using the larger cohort, who do not have methylation data, conduct a GWAS for the outcome $Y$, and obtain fitted values $\widehat{Y}$
+
+  (3) Using the fitted model from (1), obtain the predicted values for the exposure $X$ in the cohort where it is unobserved, $\widehat{X}$.
+
+  (4) The causal effect of methylation $X$ on the outcome $Y$ can be estimated by regressing $\widehat{Y}$ on $\widehat{X}$.
+
+- This is to be repeated for each HbA1c associated CpG site
+
+- R package [`TwoSampleMR`](https://github.com/MRCIEU/TwoSampleMR) for this.
+
+## Subgroup Analysis
+
+- Stratify by baseline or pre-baseline HbA1c level
+
+- Stratify by race/ethnicity
+
+- Stratify by baseline or pre-baseline eGFR level
+
+- Stratify by relative time of diagnosis with Type 2 diabetes (recently diagnosed vs. not recently diagnosed)
+
+## Glossary {.unnumbered .unlisted}
+
+* DM: Diabetes Mellitus
+
+* EWAS: Epigenome-wide Association Study
+
+* DCCT: Diabetes Control and Complications Trial (1983-1993)
+
+  * EDIC: Epidemiology of Diabetes Interventions and Complications (1994-present), longitudinal monitoring of patients enrolled in DCCT
+
+* CpG site: cytosine/guanine
+
+* PDR: Proliferative Diabetic Retinopathy
+
+* SNPDR: Severe Nonproliferative Diabetic Retinopathy
+
+* CSME: Clinically Significant Macular Edema
+
+* AER: Albumin Excretion Rate
+
+* meQTL: Methylation Quantitative Trait Loci
+
+## References {.unnumbered}
+
+:::{#refs}
+:::
+
+
